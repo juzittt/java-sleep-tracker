@@ -13,7 +13,7 @@ public class UserClassification implements Function<List<SleepingSession>, Strin
     @Override
     public String apply(List<SleepingSession> sessions) {
         if (sessions.isEmpty()) {
-            return "список сонных сессий пуст";
+            return "Список сонных сессий пуст";
         }
 
         return sessions.stream()
@@ -38,8 +38,13 @@ public class UserClassification implements Function<List<SleepingSession>, Strin
                 }, Collectors.counting()))
                 .entrySet().stream()
                 .filter(e -> !e.getKey().equals("undefined"))
-                .max(Map.Entry.comparingByValue())
-                .orElse(Map.entry("Голубь", 0L))
-                .getKey();
+                .collect(Collectors.groupingBy(Map.Entry::getValue, Collectors.toList()))
+                .entrySet().stream()
+                .max(Map.Entry.comparingByKey())
+                .map(maxEntry -> {
+                    List<Map.Entry<String, Long>> maxTypes = maxEntry.getValue();
+                    return maxTypes.size() > 1 ? "Голубь" : maxTypes.get(0).getKey();
+                })
+                .orElse("Голубь");
     }
 }

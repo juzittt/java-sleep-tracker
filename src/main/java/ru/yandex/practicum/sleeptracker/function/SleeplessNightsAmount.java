@@ -2,8 +2,8 @@ package ru.yandex.practicum.sleeptracker.function;
 
 import ru.yandex.practicum.sleeptracker.SleepingSession;
 
-import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.Function;
 
@@ -15,20 +15,31 @@ public class SleeplessNightsAmount implements Function<List<SleepingSession>, St
             return String.valueOf(0);
         }
 
-        long nightsAmount = ChronoUnit.DAYS.between(
-                sessions.getFirst().startTime().toLocalDate(),
-                sessions.getLast().endTime().toLocalDate()
-        );
+        LocalDate firstDate = sessions.get(0).startTime().toLocalDate();
+        LocalDate lastDate = sessions.get(sessions.size() - 1).endTime().toLocalDate();
 
-        long sleepingNights = sessions.stream()
-                .filter(s -> {
-                    LocalTime start = s.startTime().toLocalTime();
-                    int startDay = s.startTime().toLocalDate().getDayOfMonth();
-                    int endDay = s.endTime().toLocalDate().getDayOfMonth();
-                    boolean notSameDay = startDay != endDay;
-                    return notSameDay || start.isBefore(LocalTime.of(6, 0));
-                })
-                .count();
-        return String.valueOf(nightsAmount - sleepingNights);
+        long sleeplessNights = 0;
+
+        for (LocalDate date = firstDate; !date.isAfter(lastDate); date = date.plusDays(1)) {
+            LocalDateTime nightStart = date.atStartOfDay();
+            LocalDateTime nightEnd = nightStart.plusDays(1).withHour(6).withMinute(0);
+
+            boolean covered = sessions.stream().anyMatch(session ->
+                    isOverlapping(session, nightStart, nightEnd)
+            );
+
+            if (!covered) {
+                sleeplessNights++;
+            }
+        }
+
+        return String.valueOf(sleeplessNights);
+    }
+
+    private boolean isOverlapping(SleepingSession session, LocalDateTime nightStart, LocalDateTime nightEnd) {
+        LocalDateTime sessionStart = session.startTime();
+        LocalDateTime sessionEnd = session.endTime();
+
+        return sessionStart.isBefore(nightEnd) && sessionEnd.isAfter(nightStart);
     }
 }

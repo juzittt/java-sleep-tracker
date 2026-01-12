@@ -1,5 +1,6 @@
 package ru.yandex.practicum.sleeptracker.function;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.sleeptracker.SleepQuality;
 import ru.yandex.practicum.sleeptracker.SleepingSession;
@@ -9,26 +10,45 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@DisplayName("AverageDurationSession — подсчёт средней продолжительности сессии")
 class AverageDurationSessionTest {
+
+    private static final LocalDateTime BASE_DATE = LocalDateTime.of(2025, 4, 5, 0, 0);
+    private static final int SESSION_120_MIN = 120;
+    private static final int SESSION_60_MIN = 60;
+    private static final String EXPECTED_AVERAGE = "70";
 
     private final AverageDurationSession function = new AverageDurationSession();
 
     @Test
-    void shouldReturnZeroForEmptyList() {
-        assertEquals("0", function.apply(List.of()));
+    @DisplayName("Пустой список → возвращает '0'")
+    void apply_emptyList_returnsZero() {
+        List<SleepingSession> sessions = List.of();
+
+        String result = function.apply(sessions);
+
+        assertEquals("0", result);
     }
 
     @Test
-    void shouldReturnAverageDurationRoundedToInt() {
+    @DisplayName("Сессии 120, 60, 30 минут → среднее 70 минут")
+    void apply_sessionsWithDifferentDurations_returnsRoundedAverage() {
         var sessions = List.of(
-                new SleepingSession(dt("10:00"), dt("12:00"), SleepQuality.GOOD),
-                new SleepingSession(dt("14:00"), dt("15:00"), SleepQuality.BAD),
-                new SleepingSession(dt("16:00"), dt("16:30"), SleepQuality.NORMAL)
+                sessionWithDuration(0, 2, SESSION_120_MIN),
+                sessionWithDuration(2, 3, SESSION_60_MIN),
+                sessionWithDuration(4, 4, 30)
         );
-        assertEquals("70", function.apply(sessions));
+
+        String result = function.apply(sessions);
+
+        assertEquals(EXPECTED_AVERAGE, result);
     }
 
-    private LocalDateTime dt(String time) {
-        return LocalDateTime.parse("2025-04-05T" + time + ":00");
+    private SleepingSession sessionWithDuration(int startHour, int endHour, int durationMinutes) {
+        return new SleepingSession(
+                BASE_DATE.plusHours(startHour),
+                BASE_DATE.plusHours(endHour).plusMinutes(durationMinutes % 60),
+                SleepQuality.GOOD
+        );
     }
 }
